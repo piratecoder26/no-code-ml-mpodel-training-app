@@ -1,5 +1,6 @@
 import os
 import pickle
+import streamlit as st
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, OneHotEncoder
@@ -19,14 +20,17 @@ parent_dir = os.path.dirname(working_dir)
 
 
 # Step 1: Read the data
-def read_data(file_name):
-    file_path = f"{parent_dir}/data/{file_name}"
-    if file_path.endswith('.csv'):
-        df = pd.read_csv(file_path)
+import pandas as pd
+
+def read_data(uploaded_file):
+    # Check if the uploaded file is a CSV
+    try:
+        df = pd.read_csv(uploaded_file)
         return df
-    elif file_path.endswith('.xlsx') or file_path.endswith('.xls'):
-        df = pd.read_excel(file_path)
-        return df
+    except Exception as e:
+        st.error("Error reading file: " + str(e))
+        return None
+
 
 
 # Step 2: Preprocess the data
@@ -80,13 +84,30 @@ def preprocess_data(df, target_column, scaler_type):
 
 
 # Step 3: Train the model
+import csv
+
 def train_model(X_train, y_train, model, model_name):
-    # training the selected model
+    # Train the selected model
     model.fit(X_train, y_train)
-    # saving the trained model
-    with open(f"{parent_dir}/trained_model/{model_name}.pkl", 'wb') as file:
-        pickle.dump(model, file)
+
+    # Save the model's parameters or any relevant details in a CSV
+    model_details = {
+        "Model Name": model_name,
+        "Model Type": type(model).__name__,
+        "Parameters": model.get_params()
+    }
+
+    # Define the file path for saving the CSV
+    csv_file_path = f"{parent_dir}/trained_model/{model_name}.csv"
+    
+    # Write model details to CSV
+    with open(csv_file_path, 'w', newline='') as csv_file:
+        writer = csv.DictWriter(csv_file, fieldnames=model_details.keys())
+        writer.writeheader()
+        writer.writerow(model_details)
+
     return model
+
 
 
 # Step 4: Evaluate the model
